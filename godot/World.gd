@@ -183,7 +183,7 @@ func _unhandled_input(event: InputEvent) -> void:
                 # Move any minions out of the way
                 for m in get_tree().get_nodes_in_group("minions"):
                     var tl : Vector2 = world_map.map_to_world(tile_pos)
-                    if m.position.x >= tl.x and m.position.x <= tl.x+32 and m.position.y >= tl.y and m.position.y <= tl.y+32:
+                    if m.position.x >= tl.x and m.position.x <= tl.x+32 and m.position.y >= tl.y and m.position.y <= tl.y+32 and m.is_idle():
                         var options := find_adjecent_corridor(tile_pos, 2, 2)
                         m.walk_to(world_map.map_to_world(options[0])+Vector2(8,8))
                 inventory.take({'Stone': 4})
