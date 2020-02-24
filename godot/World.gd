@@ -8,7 +8,6 @@ var inventory : Inventory
 
 var path := Array()
 
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
     inventory = Inventory.new()
     inventory.connect("amount_changed", self, "_on_inventory_amount_changed")
@@ -19,7 +18,25 @@ func _ready() -> void:
     for m in get_tree().get_nodes_in_group("minions"):
         m.connect("tile_dug", self, "_on_tile_dug")
 
+func path_length(path : PoolVector2Array) -> float:
+    """
+        Calculates the total length of a path, i.e. a series of coordinates.
+    """
+    var dist := 0.0
+    if path.size() > 0:
+        var last_p = path[0]
+        path.remove(0)
+        for p in path:
+            dist += (last_p - p).length()
+            last_p = p
+    return dist    
+
 func tile_can_be_dug(tile : Vector2) -> bool:
+    """
+        Determines if a tile can be dug or not.
+        
+        Anything that is not built, nor already dug, can be dug.
+    """
     # Is it already dug or built?
     if world_map.tile_set.tile_get_name(world_map.get_cellv(tile)) == "corridor" or \
        world_map.tile_set.tile_get_name(world_map.get_cellv(tile)).begins_with("building-"):
@@ -32,7 +49,50 @@ func tile_can_be_dug(tile : Vector2) -> bool:
             found = true
     return found
 
+func find_adjecent_corridor(pos : Vector2, width : int, height : int) -> PoolVector2Array:
+    """
+        Produces a list of corridors adjecent to a square with the top left corner at pos,
+        being width blocks wide and height blocks high.
+    """
+    var res : PoolVector2Array
+    for x in range(width):
+        if world_map.tile_set.tile_get_name(world_map.get_cellv(pos + Vector2(x, -1))) == "corridor":
+            res.append(pos + Vector2(x, -1))
+        if world_map.tile_set.tile_get_name(world_map.get_cellv(pos + Vector2(x, height))) == "corridor":
+            res.append(pos + Vector2(x, height))
+    for y in range(height):
+        if world_map.tile_set.tile_get_name(world_map.get_cellv(pos + Vector2(-1, y))) == "corridor":
+            res.append(pos + Vector2(-1, y))
+        if world_map.tile_set.tile_get_name(world_map.get_cellv(pos + Vector2(width, y))) == "corridor":
+            res.append(pos + Vector2(width, y))
+    return res
+    
+func can_build(pos : Vector2, width : int, height : int) -> bool:
+    """
+        Determines if an area can be built.
+        
+        Ensures that the area consists of corridor, and that there are adjecent corridors.
+    """
+    # Area consists of empty corridors
+    var area_free := true
+    for y in range(height):
+        for x in range(width):
+            if world_map.tile_set.tile_get_name(world_map.get_cellv(pos + Vector2(x,y))) != "corridor":
+                area_free = false
+                
+    # Area can be accessed, i.e. there are adjecent corridors
+    var accessible : bool = (find_adjecent_corridor(pos, width, height).size() > 0)
+    
+    # TODO should ensure that one can not enclose minions between buildings
+    
+    return (area_free and accessible)
+
 func _on_tile_dug(tile : Vector2, digger : Minion) -> void:
+    """
+        Gets called when a tile has been dug.
+        
+        Updates the inventory, map and fog map.
+    """
     if not tile_can_be_dug(tile):
         print("ERROR: cannot dig at " + str(tile))
         return
@@ -87,29 +147,16 @@ func _unhandled_input(event: InputEvent) -> void:
                     if m.is_idle():
                         if not found:
                             var path = navigator.get_simple_path(m.position, event.position)
-                            assert path.size() > 0
-                            var dist := 0.0
-                            var last_p = path[0]
-                            path.remove(0)
-                            for p in path:
-                                dist += (last_p - p).length()
-                                last_p = p
-                                
-                            found_dist = dist
-                            found = m
+                            if path.size() > 0:
+                                found_dist = path_length(path)
+                                found = m
                         else:
                             var path = navigator.get_simple_path(m.position, event.position)
-                            assert path.size() > 0
-                            var dist := 0.0
-                            var last_p = path[0]
-                            path.remove(0)
-                            for p in path:
-                                dist += (last_p - p).length()
-                                last_p = p
-                                
-                            if found_dist > dist:
-                                found_dist = dist
-                                found = m
+                            if path.size() > 0:
+                                var dist := path_length(path)                                    
+                                if found_dist > dist:
+                                    found_dist = dist
+                                    found = m
 
                 # If minion, set path
                 if found:
@@ -119,12 +166,15 @@ func _unhandled_input(event: InputEvent) -> void:
         else:
             var tile_pos = world_map.world_to_map(event.global_position)
             $Navigation2D/WorldMap/BuildingMarker.visible = false
-            var can_build := true
-            for y in range(2):
-                for x in range(2):
-                    if world_map.tile_set.tile_get_name(world_map.get_cellv(tile_pos + Vector2(x,y))) != "corridor":
-                        can_build = false
-            if can_build:
+            if can_build(tile_pos, 2, 2):
+                # Move any minions out of the way
+                for m in get_tree().get_nodes_in_group("minions"):
+                    var tl : Vector2 = world_map.map_to_world(tile_pos)
+                    if m.position.x >= tl.x and m.position.x <= tl.x+32 and m.position.y >= tl.y and m.position.y <= tl.y+32:
+                        var options := find_adjecent_corridor(tile_pos, 2, 2)
+                        # TODO this might mess up minions passing through - we need a task queue system
+                        m.set_path_and_target(navigator.get_simple_path(m.position, world_map.map_to_world(options[0])+Vector2(8,8)), Vector2(-1, -1))
+                inventory.take({'Stone': 4})
                 world_map.set_cellv(tile_pos + Vector2(0,0), world_map.tile_set.find_tile_by_name("building-warehouse-1"))
                 world_map.set_cellv(tile_pos + Vector2(1,0), world_map.tile_set.find_tile_by_name("building-warehouse-2"))
                 world_map.set_cellv(tile_pos + Vector2(0,1), world_map.tile_set.find_tile_by_name("building-warehouse-3"))
@@ -132,12 +182,7 @@ func _unhandled_input(event: InputEvent) -> void:
     elif event is InputEventMouseMotion:
         var tile_pos = world_map.world_to_map(event.global_position)
         $Navigation2D/WorldMap/BuildingMarker.position = world_map.map_to_world(tile_pos + Vector2(1,1))
-        var can_build := true
-        for y in range(2):
-            for x in range(2):
-                if world_map.tile_set.tile_get_name(world_map.get_cellv(tile_pos + Vector2(x,y))) != "corridor":
-                    can_build = false
-        if can_build:
+        if can_build(tile_pos, 2, 2) and inventory.can_take({'Stone': 4}):
             $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/can-2x2.png")
         else:
             $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/cannot-2x2.png")
@@ -145,6 +190,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 var _hud_map := Dictionary()
 func _on_inventory_amount_changed(name : String, amount : int) -> void:
+    """
+        Updated the HUD upon inventory amount changes
+    """
     if _hud_map.size() == 0:
         _hud_map['Coal'] = $CanvasLayer/Control/HBoxContainer/Label
         _hud_map['Emerald'] = $CanvasLayer/Control/HBoxContainer/Label2
@@ -156,6 +204,11 @@ func _on_inventory_amount_changed(name : String, amount : int) -> void:
     _hud_map[name].text = str(amount)
 
 class Inventory:
+    """
+        Class representing the inventory.
+        
+        Keeps track of the amount of materials.
+    """
     var _amounts := Array()
     var _names := ['Coal', 'Emerald', 'Gold', 'Iron', 'Lapis', 'Redstone', 'Stone']
     
@@ -166,11 +219,45 @@ class Inventory:
             self._amounts.append(0)
             
     func force_update() -> void:
+        """
+            Forces the emission of amount_changed signals for all materials.
+        """
         for name in self._names:
             emit_signal("amount_changed", name, self._amounts[_names.find(name)])
     
     func add(name : String, amount : int = 1) -> void:
+        """
+            Adds amount of name to the inventory.
+        """
         assert name in self._names
+        assert amount > 0
         
         self._amounts[_names.find(name)] += amount
         emit_signal("amount_changed", name, self._amounts[_names.find(name)])
+    
+    func can_take(amounts : Dictionary) -> bool:
+        """
+            Returns true if the amounts can be taken from the inventory.
+        """
+        var res : bool = true
+        for k in amounts.keys():
+            assert k in self._names
+            assert amounts[k] > 0
+            if self._amounts[self._names.find(k)] < amounts[k]:
+                res = false
+        return res
+    
+    func take(amounts : Dictionary) -> bool:
+        """
+            Takes amounts from inventory. Returns true if successful
+            
+            Accepts a dictionary as input and ensures that all amounts, or none, are taken.
+        """
+        if can_take(amounts):
+            for k in amounts.keys():
+                self._amounts[self._names.find(k)] -= amounts[k]
+            for k in amounts.keys():
+                emit_signal("amount_changed", k, self._amounts[self._names.find(k)])
+            return true
+        else:
+            return false
