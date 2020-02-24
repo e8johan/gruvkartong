@@ -6,8 +6,6 @@ onready var navigator := $Navigation2D
 
 var inventory : Inventory
 
-var path := Array()
-
 func _ready() -> void:
     inventory = Inventory.new()
     inventory.connect("amount_changed", self, "_on_inventory_amount_changed")
