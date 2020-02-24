@@ -4,6 +4,8 @@ Copyright(C) 2020 Johan Thelin
 
 A game inspired by the amazing rymdkapsel.
 
+![Screenshot](screenshots/front.png "Screenshot")
+
 # Instructions
 
 Currently you cannot do much. The idea is to create a resource mining, refining and exploration game.
