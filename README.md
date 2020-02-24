@@ -18,13 +18,25 @@ Currently you cannot do much. The idea is to create a resource mining, refining 
 
 # Todo
 
-- The game currently contains minecraft assets - hence the private repo
 - Buildings!
-- Doing stuff with buildings.
-- Tearing down buildings.
-- Assigning minions to tasks.
-- Goblins.
-- Non-hardcoded minions.
+    - Different types of buildings
+    - Tearing down buildings
+    - Building costs
+    - Walking around buildings when passing by
+    - Walking into buildings when interacting
+- Doing stuff with buildings
+    - Material refinement processes
+- Assigning minions to tasks
+    - E.g. cooking, carrying, defending, and so on
+- Goblins
+    - Appear from random blocks when digging
+- Non-hardcoded minions
+    - Belong to certain buildings
+- Work-queue per minion
+    - e.g. navigate along path to position
+    - build something (wait for material, then construct)
+    - carry something (two paths with an item)
+    - recalculate all paths as soon as the map changes
 
 ## Building logic
 
