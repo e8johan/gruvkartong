@@ -13,9 +13,15 @@ _global_script_classes=[ {
 "class": "Minion",
 "language": "GDScript",
 "path": "res://actors/Minion.gd"
+}, {
+"base": "Node",
+"class": "Tasks",
+"language": "GDScript",
+"path": "res://utils/Tasks.gd"
 } ]
 _global_script_class_icons={
-"Minion": ""
+"Minion": "",
+"Tasks": ""
 }
 
 [application]

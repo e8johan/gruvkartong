@@ -5,36 +5,31 @@ signal tile_dug
 
 const SPEED : int = 100
 
-var _path : PoolVector2Array
-var _target : Vector2 = Vector2(-1, -1)
+var _tasks : Tasks
+var _world setget _set_world
 
 func _ready() -> void:
+    _tasks = Tasks.new()
+    _tasks.minion = self
+    add_child(_tasks)
     add_to_group("minions")
     
+func _set_world(w) -> void:
+    _tasks.world = w
+    _world = w
+    
+func _on_tile_dug(target : Vector2, minion) -> void:
+    emit_signal("tile_dug", target, minion)
+    
 func is_idle() -> bool:
-    if _path.size() == 0 and _target == Vector2(-1, -1):
-        return true
-    else:
-        return false
+    return _tasks.is_idle()
         
-func set_path_and_target(path : PoolVector2Array, target : Vector2) -> void:
-    _path = path
-    _target = target
+func walk_to_and_dig(walk_to : Vector2, dig_tile : Vector2) -> void:
+    _tasks.add_walk(walk_to)
+    _tasks.add_dig(dig_tile)
 
-func _process(delta: float) -> void:
-    var walk_distance = SPEED * delta
+func walk_to(walk_to : Vector2) -> void:
+    _tasks.add_walk(walk_to)
     
-    var last_position = self.position
-    while _path.size():
-        var distance_between_points = last_position.distance_to(_path[0])
-        if walk_distance <= distance_between_points:
-            self.position = last_position.linear_interpolate(_path[0], walk_distance/distance_between_points)
-            return
-        walk_distance -= distance_between_points
-        last_position = _path[0]
-        _path.remove(0)
-    self.position = last_position
-    
-    if _target != Vector2(-1, -1):
-        emit_signal("tile_dug", _target, self)
-        _target = Vector2(-1, -1)
+func map_changed(tile : Vector2, width : int, height : int) -> void:
+    _tasks.map_changed(tile, width, height)

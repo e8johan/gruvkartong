@@ -16,6 +16,7 @@ func _ready() -> void:
     inventory.add('Iron', 2)
     
     for m in get_tree().get_nodes_in_group("minions"):
+        m._world = self
         m.connect("tile_dug", self, "_on_tile_dug")
 
 func path_length(path : PoolVector2Array) -> float:
@@ -87,7 +88,18 @@ func can_build(pos : Vector2, width : int, height : int) -> bool:
     
     return (area_free and accessible)
 
-func _on_tile_dug(tile : Vector2, digger : Minion) -> void:
+func _map_changed(tile : Vector2, width: int, height : int) -> void:
+    """
+        The map has changed from tile and inside width/height.
+        
+        This causes all walks to be recalculated.
+        All walks with destinations inside the changed areas are errors.
+    """
+    for m in get_tree().get_nodes_in_group("minions"):
+        m.map_changed(tile, width, height)
+    
+
+func _on_tile_dug(tile : Vector2, digger) -> void:
     """
         Gets called when a tile has been dug.
         
@@ -130,6 +142,7 @@ func _on_tile_dug(tile : Vector2, digger : Minion) -> void:
         for y in range(-1, 2):
             if fog_map.get_cellv(tile + Vector2(x, y)) != TileMap.INVALID_CELL:
                 fog_map.set_cellv(tile + Vector2(x, y), edge_id)
+    _map_changed(tile, 1, 1)
 
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventMouseButton:
@@ -141,7 +154,7 @@ func _unhandled_input(event: InputEvent) -> void:
                     return
                 
                 # Find idle minion closest to event.position
-                var found : Minion = null
+                var found = null
                 var found_dist : float = 0
                 for m in get_tree().get_nodes_in_group("minions"):
                     if m.is_idle():
@@ -160,7 +173,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
                 # If minion, set path
                 if found:
-                    found.set_path_and_target(navigator.get_simple_path(found.position, event.position), tile_pos)
+                    found.walk_to_and_dig(event.position, tile_pos)
             else:
                 $Navigation2D/WorldMap/BuildingMarker.visible = true
         else:
@@ -172,13 +185,13 @@ func _unhandled_input(event: InputEvent) -> void:
                     var tl : Vector2 = world_map.map_to_world(tile_pos)
                     if m.position.x >= tl.x and m.position.x <= tl.x+32 and m.position.y >= tl.y and m.position.y <= tl.y+32:
                         var options := find_adjecent_corridor(tile_pos, 2, 2)
-                        # TODO this might mess up minions passing through - we need a task queue system
-                        m.set_path_and_target(navigator.get_simple_path(m.position, world_map.map_to_world(options[0])+Vector2(8,8)), Vector2(-1, -1))
+                        m.walk_to(world_map.map_to_world(options[0])+Vector2(8,8))
                 inventory.take({'Stone': 4})
                 world_map.set_cellv(tile_pos + Vector2(0,0), world_map.tile_set.find_tile_by_name("building-warehouse-1"))
                 world_map.set_cellv(tile_pos + Vector2(1,0), world_map.tile_set.find_tile_by_name("building-warehouse-2"))
                 world_map.set_cellv(tile_pos + Vector2(0,1), world_map.tile_set.find_tile_by_name("building-warehouse-3"))
                 world_map.set_cellv(tile_pos + Vector2(1,1), world_map.tile_set.find_tile_by_name("building-warehouse-4"))
+                _map_changed(tile_pos, 2, 2)
     elif event is InputEventMouseMotion:
         var tile_pos = world_map.world_to_map(event.global_position)
         $Navigation2D/WorldMap/BuildingMarker.position = world_map.map_to_world(tile_pos + Vector2(1,1))
@@ -186,7 +199,7 @@ func _unhandled_input(event: InputEvent) -> void:
             $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/can-2x2.png")
         else:
             $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/cannot-2x2.png")
-        
+
 
 var _hud_map := Dictionary()
 func _on_inventory_amount_changed(name : String, amount : int) -> void:

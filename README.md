@@ -15,7 +15,6 @@ Currently you cannot do much. The idea is to create a resource mining, refining 
 - Left mouse button selects areas to dig. These have to be adjecent to a corridor (not diagonally).
 - Right mouse button attempts to build a 2x2 building.
 
-
 # Todo
 
 - Buildings!
@@ -31,10 +30,7 @@ Currently you cannot do much. The idea is to create a resource mining, refining 
 - Non-hardcoded minions
     - Belong to certain buildings
 - Work-queue per minion
-    - e.g. navigate along path to position
-    - build something (wait for material, then construct)
     - carry something (two paths with an item)
-    - recalculate all paths as soon as the map changes
 
 ## Building logic
 
