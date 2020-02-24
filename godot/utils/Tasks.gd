@@ -32,6 +32,11 @@ func add_walk(dest : Vector2) -> void:
     var t := TaskWalk.new(dest, self)
     _queue.append(t)
     set_process(true)
+    
+func add_straight_walk(dest : Vector2) -> void:
+    var t := TaskStraightWalk.new(dest, self)
+    _queue.append(t)
+    set_process(true)
 
 func add_dig(target : Vector2) -> void:
     var t := TaskDig.new(target, self)
@@ -62,6 +67,10 @@ func _on_tile_dug(target : Vector2, minion) -> void:
 # ---
 
 class TaskWalk:
+    """
+        Navigates to or as close to as possible to a coordinate.
+        Avoids walls and obstacles.
+    """
     var _dest : Vector2
     var _path = null
     var _world
@@ -94,7 +103,37 @@ class TaskWalk:
         else:
             _path = null # Clear all paths
 
+class TaskStraightWalk:
+    """
+        Walks to a coordinate as the crow flies (ignores walls)
+    """
+    var _dest : Vector2
+    var _world
+    
+    func _init(dest : Vector2, parent) -> void:
+        self._dest = dest
+        self._world = parent.world
+        
+    func process(delta : float, minion) -> bool:
+        var walk_distance = minion.SPEED * delta
+        var last_position = minion.position
+        var distance_between_points = last_position.distance_to(_dest)
+        if walk_distance <= distance_between_points:
+            minion.position = last_position.linear_interpolate(_dest, walk_distance/distance_between_points)
+            return false
+        else:
+            minion.position = _dest
+            return true
+
+    func map_changed(tile : Vector2, width : int, height : int) -> void:
+        var tl : Vector2 = _world.world_map.map_to_world(tile)
+        if _dest.x >= tl.x and _dest.x <= tl.x+16*width and _dest.y >= tl.y and _dest.y <= tl.y+16*height:
+            assert false # Cannot move to a changed area
+
 class TaskDig:
+    """
+        Digs a tile
+    """
     signal done
     
     var _target : Vector2

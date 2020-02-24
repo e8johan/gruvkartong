@@ -28,6 +28,9 @@ func walk_to_and_dig(walk_to : Vector2, dig_tile : Vector2) -> void:
     _tasks.add_walk(walk_to)
     _tasks.add_dig(dig_tile)
 
+func walk_straight_to(walk_to : Vector2) -> void:
+    _tasks.add_straight_walk(walk_to)
+
 func walk_to(walk_to : Vector2) -> void:
     _tasks.add_walk(walk_to)
     
