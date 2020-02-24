@@ -4,6 +4,16 @@ Copyright(C) 2020 Johan Thelin
 
 A game inspired by the amazing rymdkapsel.
 
+# Instructions
+
+Currently you cannot do much. The idea is to create a resource mining, refining and exploration game.
+
+## Input
+
+- Left mouse button selects areas to dig. These have to be adjecent to a corridor (not diagonally).
+- Right mouse button attempts to build a 2x2 building.
+
+
 # Todo
 
 - The game currently contains minecraft assets - hence the private repo
