@@ -102,7 +102,6 @@ func _map_changed(tile : Vector2, width: int, height : int) -> void:
     for m in get_tree().get_nodes_in_group("minions"):
         m.map_changed(tile, width, height)
     
-
 func _on_tile_dug(tile : Vector2, digger) -> void:
     """
         Gets called when a tile has been dug.
@@ -149,6 +148,18 @@ func _on_tile_dug(tile : Vector2, digger) -> void:
     _map_changed(tile, 1, 1)
 
 func _unhandled_input(event: InputEvent) -> void:
+    if event is InputEventMouseButton:
+        if event.is_pressed() and event.button_index == BUTTON_RIGHT:
+            set_mode(MODE_DIG)
+            return
+    elif event is InputEventKey:
+        if event.is_action_pressed("tool_dig"):
+            set_mode(MODE_DIG)
+            return
+        elif event.is_action_pressed("tool_build"):
+            set_mode(MODE_BUILD)
+            return
+    
     match _mode:
         MODE_DIG:
             dig_process(event)
@@ -197,10 +208,10 @@ func dig_process(event : InputEvent) -> void:
 # --- building ---
 
 func build_activate():
-    $Navigation2D/WorldMap/BuildingMarker.visible = true
+    $BuildingMarker.visible = true
 
 func build_deactivate():
-    $Navigation2D/WorldMap/BuildingMarker.visible = false
+    $BuildingMarker.visible = false
 
 func build_process(event : InputEvent) -> void:
     if event is InputEventMouseButton:
@@ -229,14 +240,14 @@ func build_process(event : InputEvent) -> void:
                 _map_changed(tile_pos, 2, 2)
     elif event is InputEventMouseMotion:
         var tile_pos = world_map.world_to_map(event.global_position)
-        $Navigation2D/WorldMap/BuildingMarker.position = world_map.map_to_world(tile_pos + Vector2(1,1))
+        $BuildingMarker.position = world_map.map_to_world(tile_pos + Vector2(1,1))
         _build_update_marker_state(tile_pos, 2, 2)
 
 func _build_update_marker_state(tile : Vector2, width : int, height : int) -> void:
     if can_build(tile, 2, 2) and inventory.can_take({'Stone': 4}):
-        $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/can-2x2.png")
+        $BuildingMarker.texture = load("res://assets/buildings/can-2x2.png")
     else:
-        $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/cannot-2x2.png")
+        $BuildingMarker.texture = load("res://assets/buildings/cannot-2x2.png")
     
 
 # --- mode ---
