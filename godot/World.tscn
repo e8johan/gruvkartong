@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=2]
+[gd_scene load_steps=17 format=2]
 
 [ext_resource path="res://World.gd" type="Script" id=1]
 [ext_resource path="res://assets/tiles/map_tiles.tres" type="TileSet" id=2]
@@ -12,6 +12,10 @@
 [ext_resource path="res://assets/tiles/lapis_ore.png" type="Texture" id=10]
 [ext_resource path="res://assets/tiles/redstone_ore.png" type="Texture" id=11]
 [ext_resource path="res://assets/tiles/stone.png" type="Texture" id=12]
+[ext_resource path="res://assets/tools/dig-disabled.png" type="Texture" id=13]
+[ext_resource path="res://assets/tools/dig.png" type="Texture" id=14]
+[ext_resource path="res://assets/buildings/warehouse-disabled.png" type="Texture" id=15]
+[ext_resource path="res://assets/buildings/warehouse.png" type="Texture" id=16]
 
 [node name="World" type="Node2D"]
 script = ExtResource( 1 )
@@ -48,110 +52,146 @@ __meta__ = {
 }
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
-editor/display_folded = true
 layer = 2
 
-[node name="Control" type="Control" parent="CanvasLayer"]
+[node name="InventoryContainer" type="HBoxContainer" parent="CanvasLayer"]
 anchor_right = 1.0
-
-[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control"]
-anchor_right = 1.0
+margin_left = 80.0
 margin_bottom = 16.0
 size_flags_horizontal = 3
 
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer"]
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
 margin_right = 16.0
 margin_bottom = 16.0
 texture = ExtResource( 6 )
 
-[node name="Label" type="Label" parent="CanvasLayer/Control/HBoxContainer"]
+[node name="Label" type="Label" parent="CanvasLayer/InventoryContainer"]
 margin_left = 20.0
 margin_top = 1.0
-margin_right = 88.0
+margin_right = 76.0
 margin_bottom = 15.0
 size_flags_horizontal = 3
 text = "25"
 
-[node name="TextureRect2" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 92.0
-margin_right = 108.0
+[node name="TextureRect2" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
+margin_left = 80.0
+margin_right = 96.0
 margin_bottom = 16.0
 texture = ExtResource( 7 )
 
-[node name="Label2" type="Label" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 112.0
+[node name="Label2" type="Label" parent="CanvasLayer/InventoryContainer"]
+margin_left = 100.0
 margin_top = 1.0
-margin_right = 180.0
+margin_right = 156.0
 margin_bottom = 15.0
 size_flags_horizontal = 3
 text = "25"
 
-[node name="TextureRect3" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 184.0
-margin_right = 200.0
+[node name="TextureRect3" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
+margin_left = 160.0
+margin_right = 176.0
 margin_bottom = 16.0
 texture = ExtResource( 8 )
 
-[node name="Label3" type="Label" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 204.0
+[node name="Label3" type="Label" parent="CanvasLayer/InventoryContainer"]
+margin_left = 180.0
 margin_top = 1.0
-margin_right = 272.0
+margin_right = 236.0
 margin_bottom = 15.0
 size_flags_horizontal = 3
 text = "25"
 
-[node name="TextureRect4" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 276.0
-margin_right = 292.0
+[node name="TextureRect4" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
+margin_left = 240.0
+margin_right = 256.0
 margin_bottom = 16.0
 texture = ExtResource( 9 )
 
-[node name="Label4" type="Label" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 296.0
+[node name="Label4" type="Label" parent="CanvasLayer/InventoryContainer"]
+margin_left = 260.0
 margin_top = 1.0
-margin_right = 364.0
+margin_right = 316.0
 margin_bottom = 15.0
 size_flags_horizontal = 3
 text = "25"
 
-[node name="TextureRect5" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 368.0
-margin_right = 384.0
+[node name="TextureRect5" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
+margin_left = 320.0
+margin_right = 336.0
 margin_bottom = 16.0
 texture = ExtResource( 10 )
 
-[node name="Label5" type="Label" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 388.0
+[node name="Label5" type="Label" parent="CanvasLayer/InventoryContainer"]
+margin_left = 340.0
 margin_top = 1.0
-margin_right = 456.0
+margin_right = 396.0
 margin_bottom = 15.0
 size_flags_horizontal = 3
 text = "25"
 
-[node name="TextureRect6" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 460.0
-margin_right = 476.0
+[node name="TextureRect6" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
+margin_left = 400.0
+margin_right = 416.0
 margin_bottom = 16.0
 texture = ExtResource( 11 )
 
-[node name="Label6" type="Label" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 480.0
+[node name="Label6" type="Label" parent="CanvasLayer/InventoryContainer"]
+margin_left = 420.0
 margin_top = 1.0
-margin_right = 548.0
+margin_right = 476.0
 margin_bottom = 15.0
 size_flags_horizontal = 3
 text = "25"
 
-[node name="TextureRect7" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 552.0
-margin_right = 568.0
+[node name="TextureRect7" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
+margin_left = 480.0
+margin_right = 496.0
 margin_bottom = 16.0
 texture = ExtResource( 12 )
 
-[node name="Label7" type="Label" parent="CanvasLayer/Control/HBoxContainer"]
-margin_left = 572.0
+[node name="Label7" type="Label" parent="CanvasLayer/InventoryContainer"]
+margin_left = 500.0
 margin_top = 1.0
-margin_right = 640.0
+margin_right = 560.0
 margin_bottom = 15.0
 size_flags_horizontal = 3
 text = "25"
+
+[node name="ToolsContainer" type="VBoxContainer" parent="CanvasLayer"]
+margin_right = 40.0
+margin_bottom = 40.0
+rect_min_size = Vector2( 80, 0 )
+
+[node name="Label" type="Label" parent="CanvasLayer/ToolsContainer"]
+margin_right = 80.0
+margin_bottom = 14.0
+text = "Tools"
+align = 1
+
+[node name="DigButton" type="TextureButton" parent="CanvasLayer/ToolsContainer"]
+margin_top = 18.0
+margin_right = 80.0
+margin_bottom = 50.0
+focus_mode = 0
+toggle_mode = true
+enabled_focus_mode = 0
+texture_normal = ExtResource( 13 )
+texture_pressed = ExtResource( 14 )
+texture_hover = ExtResource( 13 )
+texture_disabled = ExtResource( 13 )
+texture_focused = ExtResource( 13 )
+
+[node name="BuildButton" type="TextureButton" parent="CanvasLayer/ToolsContainer"]
+margin_top = 54.0
+margin_right = 80.0
+margin_bottom = 86.0
+focus_mode = 0
+toggle_mode = true
+enabled_focus_mode = 0
+texture_normal = ExtResource( 15 )
+texture_pressed = ExtResource( 16 )
+texture_hover = ExtResource( 15 )
+texture_disabled = ExtResource( 15 )
+texture_focused = ExtResource( 15 )
+[connection signal="pressed" from="CanvasLayer/ToolsContainer/DigButton" to="." method="_on_DigButton_pressed"]
+[connection signal="pressed" from="CanvasLayer/ToolsContainer/BuildButton" to="." method="_on_BuildButton_pressed"]

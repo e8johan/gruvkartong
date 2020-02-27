@@ -6,12 +6,18 @@ onready var navigator := $Navigation2D
 
 var inventory : Inventory
 
+enum { MODE_DIG, MODE_BUILD }
+
+var _mode : int = -1
+
 func _ready() -> void:
     inventory = Inventory.new()
     inventory.connect("amount_changed", self, "_on_inventory_amount_changed")
     inventory.force_update()
     inventory.add('Stone', 10)
     inventory.add('Iron', 2)
+    
+    set_mode(MODE_DIG)
     
     for m in get_tree().get_nodes_in_group("minions"):
         m._world = self
@@ -143,40 +149,64 @@ func _on_tile_dug(tile : Vector2, digger) -> void:
     _map_changed(tile, 1, 1)
 
 func _unhandled_input(event: InputEvent) -> void:
+    match _mode:
+        MODE_DIG:
+            dig_process(event)
+        MODE_BUILD:
+            build_process(event)
+
+# --- digging ---
+
+func dig_activate():
+    pass
+    
+func dig_deactivate():
+    pass
+
+func dig_process(event : InputEvent) -> void:
     if event is InputEventMouseButton:
         if event.is_pressed():
             var tile_pos = world_map.world_to_map(event.global_position)
-            if event.button_index == BUTTON_LEFT:
-                # Check if the tile can be dug
-                if not tile_can_be_dug(tile_pos):
-                    return
-                
-                # Find idle minion closest to event.position
-                var found = null
-                var found_dist : float = 0
-                for m in get_tree().get_nodes_in_group("minions"):
-                    if m.is_idle():
-                        if not found:
-                            var path = navigator.get_simple_path(m.position, event.position)
-                            if path.size() > 0:
-                                found_dist = path_length(path)
-                                found = m
-                        else:
-                            var path = navigator.get_simple_path(m.position, event.position)
-                            if path.size() > 0:
-                                var dist := path_length(path)                                    
-                                if found_dist > dist:
-                                    found_dist = dist
-                                    found = m
 
-                # If minion, set path
-                if found:
-                    found.walk_to_and_dig(event.position, tile_pos)
-            else:
-                $Navigation2D/WorldMap/BuildingMarker.visible = true
-        else:
+            # Check if the tile can be dug
+            if not tile_can_be_dug(tile_pos):
+                return
+            
+            # Find idle minion closest to event.position
+            var found = null
+            var found_dist : float = 0
+            for m in get_tree().get_nodes_in_group("minions"):
+                if m.is_idle():
+                    if not found:
+                        var path = navigator.get_simple_path(m.position, event.position)
+                        if path.size() > 0:
+                            found_dist = path_length(path)
+                            found = m
+                    else:
+                        var path = navigator.get_simple_path(m.position, event.position)
+                        if path.size() > 0:
+                            var dist := path_length(path)                                    
+                            if found_dist > dist:
+                                found_dist = dist
+                                found = m
+
+            # If minion, set path
+            if found:
+                found.walk_to_and_dig(event.position, tile_pos)
+
+# --- building ---
+
+func build_activate():
+    $Navigation2D/WorldMap/BuildingMarker.visible = true
+
+func build_deactivate():
+    $Navigation2D/WorldMap/BuildingMarker.visible = false
+
+func build_process(event : InputEvent) -> void:
+    if event is InputEventMouseButton:
+        if event.is_pressed():
             var tile_pos = world_map.world_to_map(event.global_position)
-            $Navigation2D/WorldMap/BuildingMarker.visible = false
+
             if can_build(tile_pos, 2, 2):
                 # Move any minions out of the way
                 for m in get_tree().get_nodes_in_group("minions"):
@@ -184,20 +214,60 @@ func _unhandled_input(event: InputEvent) -> void:
                     if m.position.x >= tl.x and m.position.x <= tl.x+32 and m.position.y >= tl.y and m.position.y <= tl.y+32 and m.is_idle():
                         var options := find_adjecent_corridor(tile_pos, 2, 2)
                         m.walk_to(world_map.map_to_world(options[0])+Vector2(8,8))
+                
+                # Take the material, update the map
                 inventory.take({'Stone': 4})
                 world_map.set_cellv(tile_pos + Vector2(0,0), world_map.tile_set.find_tile_by_name("building-warehouse-1"))
                 world_map.set_cellv(tile_pos + Vector2(1,0), world_map.tile_set.find_tile_by_name("building-warehouse-2"))
                 world_map.set_cellv(tile_pos + Vector2(0,1), world_map.tile_set.find_tile_by_name("building-warehouse-3"))
                 world_map.set_cellv(tile_pos + Vector2(1,1), world_map.tile_set.find_tile_by_name("building-warehouse-4"))
+                
+                # Update the marker status
+                _build_update_marker_state(tile_pos, 2, 2)
+                
+                # Update all affected tasks
                 _map_changed(tile_pos, 2, 2)
     elif event is InputEventMouseMotion:
         var tile_pos = world_map.world_to_map(event.global_position)
         $Navigation2D/WorldMap/BuildingMarker.position = world_map.map_to_world(tile_pos + Vector2(1,1))
-        if can_build(tile_pos, 2, 2) and inventory.can_take({'Stone': 4}):
-            $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/can-2x2.png")
-        else:
-            $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/cannot-2x2.png")
+        _build_update_marker_state(tile_pos, 2, 2)
 
+func _build_update_marker_state(tile : Vector2, width : int, height : int) -> void:
+    if can_build(tile, 2, 2) and inventory.can_take({'Stone': 4}):
+        $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/can-2x2.png")
+    else:
+        $Navigation2D/WorldMap/BuildingMarker.texture = load("res://assets/buildings/cannot-2x2.png")
+    
+
+# --- mode ---
+
+func set_mode(next_mode : int) -> void:
+    match _mode:
+        MODE_DIG:
+            dig_deactivate()
+        MODE_BUILD:
+            build_deactivate()
+    
+    $CanvasLayer/ToolsContainer/DigButton.pressed = false
+    $CanvasLayer/ToolsContainer/BuildButton.pressed = false
+    _mode = next_mode
+    match next_mode:
+        MODE_DIG:
+            $CanvasLayer/ToolsContainer/DigButton.pressed = true
+        MODE_BUILD:
+            $CanvasLayer/ToolsContainer/BuildButton.pressed = true
+        _:
+            print("Invalid mode set - going to dig")
+            $CanvasLayer/ToolsContainer/DigButton.pressed = true
+            _mode = MODE_DIG
+            
+    match _mode:
+        MODE_DIG:
+            dig_activate()
+        MODE_BUILD:
+            build_activate()
+
+# --- inventory ---
 
 var _hud_map := Dictionary()
 func _on_inventory_amount_changed(name : String, amount : int) -> void:
@@ -205,13 +275,13 @@ func _on_inventory_amount_changed(name : String, amount : int) -> void:
         Updated the HUD upon inventory amount changes
     """
     if _hud_map.size() == 0:
-        _hud_map['Coal'] = $CanvasLayer/Control/HBoxContainer/Label
-        _hud_map['Emerald'] = $CanvasLayer/Control/HBoxContainer/Label2
-        _hud_map['Gold'] = $CanvasLayer/Control/HBoxContainer/Label3
-        _hud_map['Iron'] = $CanvasLayer/Control/HBoxContainer/Label4
-        _hud_map['Lapis'] = $CanvasLayer/Control/HBoxContainer/Label5
-        _hud_map['Redstone'] = $CanvasLayer/Control/HBoxContainer/Label6
-        _hud_map['Stone'] = $CanvasLayer/Control/HBoxContainer/Label7
+        _hud_map['Coal'] = $CanvasLayer/InventoryContainer/Label
+        _hud_map['Emerald'] = $CanvasLayer/InventoryContainer/Label2
+        _hud_map['Gold'] = $CanvasLayer/InventoryContainer/Label3
+        _hud_map['Iron'] = $CanvasLayer/InventoryContainer/Label4
+        _hud_map['Lapis'] = $CanvasLayer/InventoryContainer/Label5
+        _hud_map['Redstone'] = $CanvasLayer/InventoryContainer/Label6
+        _hud_map['Stone'] = $CanvasLayer/InventoryContainer/Label7
     _hud_map[name].text = str(amount)
 
 class Inventory:
@@ -272,3 +342,9 @@ class Inventory:
             return true
         else:
             return false
+
+func _on_BuildButton_pressed() -> void:
+    set_mode(MODE_BUILD)
+
+func _on_DigButton_pressed() -> void:
+    set_mode(MODE_DIG)
