@@ -2,13 +2,16 @@ extends KinematicBody2D
 class_name Minion
 
 signal tile_dug
+signal death
 
 const SPEED : int = 100
 
 var _tasks : Tasks
 var _world setget _set_world
 
-func _ready() -> void:
+# TODO no way to die at the moment... life is good
+
+func _init() -> void:
     _tasks = Tasks.new()
     _tasks.minion = self
     add_child(_tasks)

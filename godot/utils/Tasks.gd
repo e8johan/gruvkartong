@@ -11,7 +11,6 @@ var world
 var _queue := Array()
 
 func _ready() -> void:
-    pass # Replace with function body.
     set_process(false)
     
 func _process(delta: float) -> void:

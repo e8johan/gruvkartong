@@ -5,6 +5,7 @@ onready var fog_map := $FogMap
 onready var navigator := $Navigation2D
 
 var inventory : Inventory
+var buildings : Buildings
 
 enum { MODE_DIG, MODE_BUILD }
 
@@ -16,6 +17,9 @@ func _ready() -> void:
     inventory.force_update()
     inventory.add('Stone', 10)
     inventory.add('Iron', 2)
+    
+    buildings = Buildings.new()
+    buildings.set_world(self)
     
     set_mode(MODE_DIG)
     
@@ -166,6 +170,24 @@ func _unhandled_input(event: InputEvent) -> void:
         MODE_BUILD:
             build_process(event)
 
+# --- world interface ---
+
+func world_set_tiles(tiles : Dictionary) -> void:
+    for k in tiles.keys():
+        world_map.set_cellv(k, world_map.tile_set.find_tile_by_name(tiles[k]))
+
+func world_map_to_world(map : Vector2) -> Vector2:
+    return world_map.map_to_world(map)
+    
+func world_add_actor(actor : Node) -> void:
+    actor._world = self
+    world_map.add_child(actor)
+    # TODO this is only applicable to a minion actor, unless all actors share an interface
+    actor.connect("tile_dug", self, "_on_tile_dug")
+
+func world_get_tree() -> Object:
+    return get_tree()
+
 # --- digging ---
 
 func dig_activate():
@@ -182,6 +204,8 @@ func dig_process(event : InputEvent) -> void:
             # Check if the tile can be dug
             if not tile_can_be_dug(tile_pos):
                 return
+                
+            # TODO is the tile on a dig list - i.e. we don't want to start two dig jobs for one tile
             
             # Find idle minion closest to event.position
             var found = null
@@ -227,17 +251,12 @@ func build_process(event : InputEvent) -> void:
                         m.walk_to(world_map.map_to_world(options[0])+Vector2(8,8))
                 
                 # Take the material, update the map
-                inventory.take({'Stone': 4})
-                world_map.set_cellv(tile_pos + Vector2(0,0), world_map.tile_set.find_tile_by_name("building-warehouse-1"))
-                world_map.set_cellv(tile_pos + Vector2(1,0), world_map.tile_set.find_tile_by_name("building-warehouse-2"))
-                world_map.set_cellv(tile_pos + Vector2(0,1), world_map.tile_set.find_tile_by_name("building-warehouse-3"))
-                world_map.set_cellv(tile_pos + Vector2(1,1), world_map.tile_set.find_tile_by_name("building-warehouse-4"))
-                
-                # Update the marker status
-                _build_update_marker_state(tile_pos, 2, 2)
-                
-                # Update all affected tasks
-                _map_changed(tile_pos, 2, 2)
+                if inventory.take({'Stone': 4}):
+                    buildings.create_warehouse(tile_pos)
+                    # Update the marker status
+                    _build_update_marker_state(tile_pos, 2, 2)
+                    # Update all affected tasks
+                    _map_changed(tile_pos, 2, 2)
     elif event is InputEventMouseMotion:
         var tile_pos = world_map.world_to_map(event.global_position)
         $BuildingMarker.position = world_map.map_to_world(tile_pos + Vector2(1,1))
@@ -353,6 +372,71 @@ class Inventory:
             return true
         else:
             return false
+
+# --- buildings ---
+
+class Buildings:
+    """
+        Class representing all buildings in the world
+    """
+    
+    var _world
+    var _buildings := []
+    
+    func _init() -> void:
+        pass
+    
+    func set_world(world) -> void:
+        """
+            Must be called first, sets a reference to the world tile map
+        """
+        self._world = world
+    
+    func create_warehouse(pos : Vector2) -> void:
+        # TODO assumes it is ok to build
+        # TODO assumes that minions have been moved out of the way
+        # TODO assumes map changed is emitted by caller
+        self._world.world_set_tiles({ pos + Vector2(0,0) : "building-warehouse-1", 
+                                      pos + Vector2(1,0) : "building-warehouse-2", 
+                                      pos + Vector2(0,1) : "building-warehouse-3", 
+                                      pos + Vector2(1,1) : "building-warehouse-4" })
+        var warehouse := BuildingWarehouse.new(pos, self._world)
+        _buildings.append(warehouse)
+        
+class BuildingWarehouse:
+    """
+        Class representing a warehouse
+        
+        Spawns up to 3 minions. Takes 20 seconds to spawn a minion
+    """
+    
+    var _pos : Vector2
+    var _world
+    var _minions : Array
+    
+    onready var _minion_preload
+    
+    func _init(pos : Vector2, world) -> void:
+        self._pos = pos
+        self._world = world
+        
+        self._minion_preload = load("res://actors/Minion.tscn")
+        
+        yield(self._world.world_get_tree().create_timer(3.0), "timeout")
+        _spawn_minion()
+        
+    func _on_minion_death(m) -> void:
+        assert m in _minions
+        _minions.remove(m)
+    
+    func _spawn_minion() -> void:
+        var m : Minion = _minion_preload.instance()
+        m.position = self._world.world_map_to_world(self._pos) + Vector2(8,8)
+        m.connect("death", self, "_on_minion_death")
+        _minions.append(m)
+        self._world.world_add_actor(m)
+
+# --- ui events ---
 
 func _on_BuildButton_pressed() -> void:
     set_mode(MODE_BUILD)
