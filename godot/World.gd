@@ -20,9 +20,11 @@ func _ready() -> void:
     
     buildings = Buildings.new()
     buildings.set_world(self)
+    buildings.create_warehouse(Vector2(18, 11))
     
     set_mode(MODE_DIG)
-    
+        
+    # If the world is prepopulated    
     for m in get_tree().get_nodes_in_group("minions"):
         m._world = self
         m.connect("tile_dug", self, "_on_tile_dug")
