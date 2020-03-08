@@ -17,7 +17,9 @@ Currently you cannot do much. The idea is to create a resource mining, refining 
 
 ## Buildings and minions
 
-The warehouse building type (the only type) currently spawns minions after having been created.
+The warehouse building type currently spawns four minions after having been created. The idea is that this is the initial building and cannot be built by the player. (currently it is possible)
+
+The quarter building type spawns up to three minions. It is supposed to re-spawn a minion once the a minion dies, but minions cannot die, so this is kind of pointless atm.
 
 # Todo
 

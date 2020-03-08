@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=2]
+[gd_scene load_steps=18 format=2]
 
 [ext_resource path="res://World.gd" type="Script" id=1]
 [ext_resource path="res://assets/tiles/map_tiles.tres" type="TileSet" id=2]
@@ -13,8 +13,10 @@
 [ext_resource path="res://assets/tiles/stone.png" type="Texture" id=11]
 [ext_resource path="res://assets/tools/dig-disabled.png" type="Texture" id=12]
 [ext_resource path="res://assets/tools/dig.png" type="Texture" id=13]
-[ext_resource path="res://assets/buildings/warehouse-disabled.png" type="Texture" id=14]
-[ext_resource path="res://assets/buildings/warehouse.png" type="Texture" id=15]
+[ext_resource path="res://assets/buildings/quarter-disabled.png" type="Texture" id=14]
+[ext_resource path="res://assets/buildings/quarter.png" type="Texture" id=15]
+[ext_resource path="res://assets/buildings/warehouse-disabled.png" type="Texture" id=16]
+[ext_resource path="res://assets/buildings/warehouse.png" type="Texture" id=17]
 
 [node name="World" type="Node2D"]
 script = ExtResource( 1 )
@@ -45,6 +47,7 @@ texture = ExtResource( 4 )
 layer = 2
 
 [node name="InventoryContainer" type="HBoxContainer" parent="CanvasLayer"]
+editor/display_folded = true
 anchor_right = 1.0
 margin_left = 80.0
 margin_bottom = 16.0
@@ -171,7 +174,7 @@ texture_hover = ExtResource( 12 )
 texture_disabled = ExtResource( 12 )
 texture_focused = ExtResource( 12 )
 
-[node name="BuildButton" type="TextureButton" parent="CanvasLayer/ToolsContainer"]
+[node name="BuildQuarterButton" type="TextureButton" parent="CanvasLayer/ToolsContainer"]
 margin_top = 54.0
 margin_right = 80.0
 margin_bottom = 86.0
@@ -183,5 +186,19 @@ texture_pressed = ExtResource( 15 )
 texture_hover = ExtResource( 14 )
 texture_disabled = ExtResource( 14 )
 texture_focused = ExtResource( 14 )
+
+[node name="BuildWarehouseButton" type="TextureButton" parent="CanvasLayer/ToolsContainer"]
+margin_top = 90.0
+margin_right = 80.0
+margin_bottom = 122.0
+focus_mode = 0
+toggle_mode = true
+enabled_focus_mode = 0
+texture_normal = ExtResource( 16 )
+texture_pressed = ExtResource( 17 )
+texture_hover = ExtResource( 16 )
+texture_disabled = ExtResource( 16 )
+texture_focused = ExtResource( 16 )
 [connection signal="pressed" from="CanvasLayer/ToolsContainer/DigButton" to="." method="_on_DigButton_pressed"]
-[connection signal="pressed" from="CanvasLayer/ToolsContainer/BuildButton" to="." method="_on_BuildButton_pressed"]
+[connection signal="pressed" from="CanvasLayer/ToolsContainer/BuildQuarterButton" to="." method="_on_BuildQuarterButton_pressed"]
+[connection signal="pressed" from="CanvasLayer/ToolsContainer/BuildWarehouseButton" to="." method="_on_BuildWarehouseButton_pressed"]

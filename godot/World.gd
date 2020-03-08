@@ -8,8 +8,10 @@ var inventory : Inventory
 var buildings : Buildings
 
 enum { MODE_DIG, MODE_BUILD }
+enum { BUILDING_WAREHOUSE, BUILDING_QUARTER }
 
 var _mode : int = -1
+var _building_type : int = -1
 
 var _dig_queue := []
 
@@ -120,6 +122,12 @@ func _on_tile_dug(tile : Vector2, digger) -> void:
         print("ERROR: cannot dig at " + str(tile))
         return
     
+    # Ensure that the dig was planned
+    if tile in _dig_queue:
+        _dig_queue.remove(_dig_queue.find(tile))
+    else:
+        print("ERROR: dig tile not in dig queue")
+
     # Ensure that is can be dug by the digger
     if digger:
         var digger_tile : Vector2 = world_map.world_to_map(digger.position)
@@ -128,12 +136,7 @@ func _on_tile_dug(tile : Vector2, digger) -> void:
         if dist > 1:
             print("ERROR: digger at " + str(digger.position) + " (" + str(digger_tile) + ") cannot dig at " + str(tile))
             return
-    
-    if tile in _dig_queue:
-        _dig_queue.remove(_dig_queue.find(tile))
-    else:
-        print("ERROR: dig tile not in dig queue")
-    
+        
     # Update world and inventory
     match world_map.tile_set.tile_get_name(world_map.get_cellv(tile)):
         'coal':
@@ -169,7 +172,11 @@ func _unhandled_input(event: InputEvent) -> void:
         if event.is_action_pressed("tool_dig"):
             set_mode(MODE_DIG)
             return
-        elif event.is_action_pressed("tool_build"):
+        elif event.is_action_pressed("tool_build_quarter"):
+            set_building_type(BUILDING_QUARTER)
+            set_mode(MODE_BUILD)
+        elif event.is_action_pressed("tool_build_warehouse"):
+            set_building_type(BUILDING_WAREHOUSE)
             set_mode(MODE_BUILD)
             return
     
@@ -266,7 +273,12 @@ func build_process(event : InputEvent) -> void:
                 
                 # Take the material, update the map
                 if inventory.take({'Stone': 4}):
-                    buildings.create_warehouse(tile_pos)
+                    match _building_type:
+                        BUILDING_QUARTER:
+                            buildings.create_quarter(tile_pos)
+                        BUILDING_WAREHOUSE:
+                            # TODO the warehouse is not supposed to be buildable
+                            buildings.create_warehouse(tile_pos)    
                     # Update the marker status
                     _build_update_marker_state(tile_pos, 2, 2)
                     # Update all affected tasks
@@ -284,6 +296,10 @@ func _build_update_marker_state(tile : Vector2, width : int, height : int) -> vo
 
 # --- mode ---
 
+func set_building_type(next_building : int) -> void:
+    # TODO do something here, e.g. size of foot print
+    _building_type = next_building
+
 func set_mode(next_mode : int) -> void:
     match _mode:
         MODE_DIG:
@@ -292,13 +308,18 @@ func set_mode(next_mode : int) -> void:
             build_deactivate()
     
     $CanvasLayer/ToolsContainer/DigButton.pressed = false
-    $CanvasLayer/ToolsContainer/BuildButton.pressed = false
+    $CanvasLayer/ToolsContainer/BuildQuarterButton.pressed = false
+    $CanvasLayer/ToolsContainer/BuildWarehouseButton.pressed = false
     _mode = next_mode
     match next_mode:
         MODE_DIG:
             $CanvasLayer/ToolsContainer/DigButton.pressed = true
         MODE_BUILD:
-            $CanvasLayer/ToolsContainer/BuildButton.pressed = true
+            match _building_type:
+                BUILDING_WAREHOUSE:
+                    $CanvasLayer/ToolsContainer/BuildWarehouseButton.pressed = true
+                BUILDING_QUARTER:
+                    $CanvasLayer/ToolsContainer/BuildQuarterButton.pressed = true
         _:
             print("Invalid mode set - going to dig")
             $CanvasLayer/ToolsContainer/DigButton.pressed = true
@@ -416,16 +437,61 @@ class Buildings:
         var warehouse := BuildingWarehouse.new(pos, self._world)
         _buildings.append(warehouse)
         
+    func create_quarter(pos : Vector2) -> void:
+        # TODO assumes it is ok to build
+        # TODO assumes that minions have been moved out of the way
+        # TODO assumes map changed is emitted by caller
+        # TODO should have quarter graphics
+        self._world.world_set_tiles({ pos + Vector2(0,0) : "building-quarter-1", 
+                                      pos + Vector2(1,0) : "building-quarter-2", 
+                                      pos + Vector2(0,1) : "building-quarter-3", 
+                                      pos + Vector2(1,1) : "building-quarter-4" })
+        var quarter := BuildingQuarter.new(pos, self._world)
+        _buildings.append(quarter)
+                
 class BuildingWarehouse:
     """
         Class representing a warehouse
         
-        Spawns up to 3 minions. Takes 20 seconds to spawn a minion
+        Spawns up to 4 minions, one second apart on start-up.
     """
     
     var _pos : Vector2
     var _world
-    var _minions : Array
+    
+    var _minion_preload
+    
+    func _init(pos : Vector2, world) -> void:
+        self._pos = pos
+        self._world = world
+        
+        self._minion_preload = load("res://actors/Minion.tscn")
+        
+        yield(self._world.world_get_tree().create_timer(1.0), "timeout")
+        _spawn_minion(Vector2(0,0))
+        yield(self._world.world_get_tree().create_timer(1.0), "timeout")
+        _spawn_minion(Vector2(1,0))
+        yield(self._world.world_get_tree().create_timer(1.0), "timeout")
+        _spawn_minion(Vector2(0,1))
+        yield(self._world.world_get_tree().create_timer(1.0), "timeout")
+        _spawn_minion(Vector2(1,1))
+            
+    func _spawn_minion(offset: Vector2) -> void:
+        var m : Minion = _minion_preload.instance()
+        m.position = self._world.world_map_to_world(self._pos+offset) + Vector2(8,8)
+        m.connect("death", self, "_on_minion_death")
+        self._world.world_add_actor(m)
+
+class BuildingQuarter:
+    """
+        Class representing a quarter
+        
+        Spawns up to 3 minions, one every 20 s.
+    """
+    
+    var _pos : Vector2
+    var _world
+    var _minions := []
     
     onready var _minion_preload
     
@@ -435,12 +501,18 @@ class BuildingWarehouse:
         
         self._minion_preload = load("res://actors/Minion.tscn")
         
-        yield(self._world.world_get_tree().create_timer(3.0), "timeout")
+        # TODO would be nice to have a progress bar inseatd of a hidden timer
+        yield(self._world.world_get_tree().create_timer(20.0), "timeout")
         _spawn_minion()
         
     func _on_minion_death(m) -> void:
         assert m in _minions
         _minions.remove(m)
+        
+        # TODO how do we avoid minions spawning frm ohere and _spawn_minion?
+        if _minions.size() < 3:
+            yield(self._world.world_get_tree().create_timer(20.0), "timeout")
+            _spawn_minion()        
     
     func _spawn_minion() -> void:
         var m : Minion = _minion_preload.instance()
@@ -448,11 +520,23 @@ class BuildingWarehouse:
         m.connect("death", self, "_on_minion_death")
         _minions.append(m)
         self._world.world_add_actor(m)
+        
+        # TODO how do we avoid minions spawning frm ohere and _on_minion_death?
+        if _minions.size() < 3:
+            yield(self._world.world_get_tree().create_timer(20.0), "timeout")
+            _spawn_minion()
 
 # --- ui events ---
 
-func _on_BuildButton_pressed() -> void:
-    set_mode(MODE_BUILD)
 
 func _on_DigButton_pressed() -> void:
     set_mode(MODE_DIG)
+    set_mode(MODE_DIG)
+
+func _on_BuildQuarterButton_pressed() -> void:
+    set_building_type(BUILDING_QUARTER)
+    set_mode(MODE_BUILD)
+
+func _on_BuildWarehouseButton_pressed() -> void:
+    set_building_type(BUILDING_WAREHOUSE)
+    set_mode(MODE_BUILD)
