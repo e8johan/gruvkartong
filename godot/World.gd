@@ -11,6 +11,8 @@ enum { MODE_DIG, MODE_BUILD }
 
 var _mode : int = -1
 
+var _dig_queue := []
+
 func _ready() -> void:
     inventory = Inventory.new()
     inventory.connect("amount_changed", self, "_on_inventory_amount_changed")
@@ -127,6 +129,11 @@ func _on_tile_dug(tile : Vector2, digger) -> void:
             print("ERROR: digger at " + str(digger.position) + " (" + str(digger_tile) + ") cannot dig at " + str(tile))
             return
     
+    if tile in _dig_queue:
+        _dig_queue.remove(_dig_queue.find(tile))
+    else:
+        print("ERROR: dig tile not in dig queue")
+    
     # Update world and inventory
     match world_map.tile_set.tile_get_name(world_map.get_cellv(tile)):
         'coal':
@@ -207,7 +214,11 @@ func dig_process(event : InputEvent) -> void:
             if not tile_can_be_dug(tile_pos):
                 return
                 
-            # TODO is the tile on a dig list - i.e. we don't want to start two dig jobs for one tile
+            # Check if the tile is already planned to be dug
+            if tile_pos in _dig_queue:
+                return
+                
+            # TODO remove tiles from the _dig_queue if the minion assigned dies
             
             # Find idle minion closest to event.position
             var found = null
@@ -230,6 +241,7 @@ func dig_process(event : InputEvent) -> void:
             # If minion, set path
             if found:
                 found.walk_to_and_dig(event.position, tile_pos)
+                _dig_queue.append(tile_pos)
 
 # --- building ---
 
@@ -268,8 +280,7 @@ func _build_update_marker_state(tile : Vector2, width : int, height : int) -> vo
     if can_build(tile, 2, 2) and inventory.can_take({'Stone': 4}):
         $BuildingMarker.texture = load("res://assets/buildings/can-2x2.png")
     else:
-        $BuildingMarker.texture = load("res://assets/buildings/cannot-2x2.png")
-    
+        $BuildingMarker.texture = load("res://assets/buildings/cannot-2x2.png")   
 
 # --- mode ---
 

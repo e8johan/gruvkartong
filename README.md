@@ -34,8 +34,7 @@ The warehouse building type (the only type) currently spawns minions after havin
     - Random walking when bored
 - Goblins
     - Appear from random blocks when digging
-- Work-queue per minion - with central knowledge spread
-    - e.g. avoid digging the same place twice
+- Central task list, to reassign tasks when minions die, etc
 
 ## Building logic
 
