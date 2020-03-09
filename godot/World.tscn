@@ -1,22 +1,16 @@
-[gd_scene load_steps=18 format=2]
+[gd_scene load_steps=12 format=2]
 
 [ext_resource path="res://World.gd" type="Script" id=1]
 [ext_resource path="res://assets/tiles/map_tiles.tres" type="TileSet" id=2]
 [ext_resource path="res://assets/tiles/fog_tiles.tres" type="TileSet" id=3]
 [ext_resource path="res://assets/buildings/cannot-2x2.png" type="Texture" id=4]
-[ext_resource path="res://assets/tiles/coal_ore.png" type="Texture" id=5]
-[ext_resource path="res://assets/tiles/emerald_ore.png" type="Texture" id=6]
-[ext_resource path="res://assets/tiles/gold_ore.png" type="Texture" id=7]
-[ext_resource path="res://assets/tiles/iron_ore.png" type="Texture" id=8]
-[ext_resource path="res://assets/tiles/lapis_ore.png" type="Texture" id=9]
-[ext_resource path="res://assets/tiles/redstone_ore.png" type="Texture" id=10]
-[ext_resource path="res://assets/tiles/stone.png" type="Texture" id=11]
-[ext_resource path="res://assets/tools/dig-disabled.png" type="Texture" id=12]
-[ext_resource path="res://assets/tools/dig.png" type="Texture" id=13]
-[ext_resource path="res://assets/buildings/quarter-disabled.png" type="Texture" id=14]
-[ext_resource path="res://assets/buildings/quarter.png" type="Texture" id=15]
-[ext_resource path="res://assets/buildings/warehouse-disabled.png" type="Texture" id=16]
-[ext_resource path="res://assets/buildings/warehouse.png" type="Texture" id=17]
+[ext_resource path="res://ui/InventoryBar.tscn" type="PackedScene" id=5]
+[ext_resource path="res://assets/tools/dig-disabled.png" type="Texture" id=6]
+[ext_resource path="res://assets/tools/dig.png" type="Texture" id=7]
+[ext_resource path="res://assets/buildings/quarter-disabled.png" type="Texture" id=8]
+[ext_resource path="res://assets/buildings/quarter.png" type="Texture" id=9]
+[ext_resource path="res://assets/buildings/warehouse-disabled.png" type="Texture" id=10]
+[ext_resource path="res://assets/buildings/warehouse.png" type="Texture" id=11]
 
 [node name="World" type="Node2D"]
 script = ExtResource( 1 )
@@ -46,108 +40,8 @@ texture = ExtResource( 4 )
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 2
 
-[node name="InventoryContainer" type="HBoxContainer" parent="CanvasLayer"]
-anchor_right = 1.0
+[node name="InventoryBar" parent="CanvasLayer" instance=ExtResource( 5 )]
 margin_left = 80.0
-margin_bottom = 16.0
-size_flags_horizontal = 3
-
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
-margin_right = 16.0
-margin_bottom = 16.0
-texture = ExtResource( 5 )
-
-[node name="Label" type="Label" parent="CanvasLayer/InventoryContainer"]
-margin_left = 20.0
-margin_top = 1.0
-margin_right = 76.0
-margin_bottom = 15.0
-size_flags_horizontal = 3
-text = "25"
-
-[node name="TextureRect2" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
-margin_left = 80.0
-margin_right = 96.0
-margin_bottom = 16.0
-texture = ExtResource( 6 )
-
-[node name="Label2" type="Label" parent="CanvasLayer/InventoryContainer"]
-margin_left = 100.0
-margin_top = 1.0
-margin_right = 156.0
-margin_bottom = 15.0
-size_flags_horizontal = 3
-text = "25"
-
-[node name="TextureRect3" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
-margin_left = 160.0
-margin_right = 176.0
-margin_bottom = 16.0
-texture = ExtResource( 7 )
-
-[node name="Label3" type="Label" parent="CanvasLayer/InventoryContainer"]
-margin_left = 180.0
-margin_top = 1.0
-margin_right = 236.0
-margin_bottom = 15.0
-size_flags_horizontal = 3
-text = "25"
-
-[node name="TextureRect4" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
-margin_left = 240.0
-margin_right = 256.0
-margin_bottom = 16.0
-texture = ExtResource( 8 )
-
-[node name="Label4" type="Label" parent="CanvasLayer/InventoryContainer"]
-margin_left = 260.0
-margin_top = 1.0
-margin_right = 316.0
-margin_bottom = 15.0
-size_flags_horizontal = 3
-text = "25"
-
-[node name="TextureRect5" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
-margin_left = 320.0
-margin_right = 336.0
-margin_bottom = 16.0
-texture = ExtResource( 9 )
-
-[node name="Label5" type="Label" parent="CanvasLayer/InventoryContainer"]
-margin_left = 340.0
-margin_top = 1.0
-margin_right = 396.0
-margin_bottom = 15.0
-size_flags_horizontal = 3
-text = "25"
-
-[node name="TextureRect6" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
-margin_left = 400.0
-margin_right = 416.0
-margin_bottom = 16.0
-texture = ExtResource( 10 )
-
-[node name="Label6" type="Label" parent="CanvasLayer/InventoryContainer"]
-margin_left = 420.0
-margin_top = 1.0
-margin_right = 476.0
-margin_bottom = 15.0
-size_flags_horizontal = 3
-text = "25"
-
-[node name="TextureRect7" type="TextureRect" parent="CanvasLayer/InventoryContainer"]
-margin_left = 480.0
-margin_right = 496.0
-margin_bottom = 16.0
-texture = ExtResource( 11 )
-
-[node name="Label7" type="Label" parent="CanvasLayer/InventoryContainer"]
-margin_left = 500.0
-margin_top = 1.0
-margin_right = 560.0
-margin_bottom = 15.0
-size_flags_horizontal = 3
-text = "25"
 
 [node name="ToolsContainer" type="VBoxContainer" parent="CanvasLayer"]
 margin_right = 40.0
@@ -167,11 +61,11 @@ margin_bottom = 50.0
 focus_mode = 0
 toggle_mode = true
 enabled_focus_mode = 0
-texture_normal = ExtResource( 12 )
-texture_pressed = ExtResource( 13 )
-texture_hover = ExtResource( 12 )
-texture_disabled = ExtResource( 12 )
-texture_focused = ExtResource( 12 )
+texture_normal = ExtResource( 6 )
+texture_pressed = ExtResource( 7 )
+texture_hover = ExtResource( 6 )
+texture_disabled = ExtResource( 6 )
+texture_focused = ExtResource( 6 )
 
 [node name="BuildQuarterButton" type="TextureButton" parent="CanvasLayer/ToolsContainer"]
 margin_top = 54.0
@@ -180,11 +74,11 @@ margin_bottom = 86.0
 focus_mode = 0
 toggle_mode = true
 enabled_focus_mode = 0
-texture_normal = ExtResource( 14 )
-texture_pressed = ExtResource( 15 )
-texture_hover = ExtResource( 14 )
-texture_disabled = ExtResource( 14 )
-texture_focused = ExtResource( 14 )
+texture_normal = ExtResource( 8 )
+texture_pressed = ExtResource( 9 )
+texture_hover = ExtResource( 8 )
+texture_disabled = ExtResource( 8 )
+texture_focused = ExtResource( 8 )
 
 [node name="BuildWarehouseButton" type="TextureButton" parent="CanvasLayer/ToolsContainer"]
 margin_top = 90.0
@@ -193,11 +87,11 @@ margin_bottom = 122.0
 focus_mode = 0
 toggle_mode = true
 enabled_focus_mode = 0
-texture_normal = ExtResource( 16 )
-texture_pressed = ExtResource( 17 )
-texture_hover = ExtResource( 16 )
-texture_disabled = ExtResource( 16 )
-texture_focused = ExtResource( 16 )
+texture_normal = ExtResource( 10 )
+texture_pressed = ExtResource( 11 )
+texture_hover = ExtResource( 10 )
+texture_disabled = ExtResource( 10 )
+texture_focused = ExtResource( 10 )
 [connection signal="pressed" from="CanvasLayer/ToolsContainer/DigButton" to="." method="_on_DigButton_pressed"]
 [connection signal="pressed" from="CanvasLayer/ToolsContainer/BuildQuarterButton" to="." method="_on_BuildQuarterButton_pressed"]
 [connection signal="pressed" from="CanvasLayer/ToolsContainer/BuildWarehouseButton" to="." method="_on_BuildWarehouseButton_pressed"]

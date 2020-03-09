@@ -3,6 +3,7 @@ extends Node2D
 onready var world_map := $Navigation2D/WorldMap
 onready var fog_map := $FogMap
 onready var navigator := $Navigation2D
+onready var inventory_bar := $CanvasLayer/InventoryBar
 
 var inventory : Inventory
 var buildings : Buildings
@@ -16,12 +17,11 @@ var _building_type : int = -1
 var _dig_queue := []
 
 func _ready() -> void:
-    _inventory_hud_ready()
     inventory = Inventory.new()
-    inventory.connect("amount_changed", self, "_on_inventory_amount_changed")
-    inventory.force_update()
     inventory.add('Stone', 10)
     inventory.add('Iron', 2)
+    
+    inventory_bar.set_inventory(inventory)
     
     buildings = Buildings.new()
     buildings.set_world(self)
@@ -255,11 +255,11 @@ func dig_process(event : InputEvent) -> void:
 
 func build_activate():
     $BuildingMarker.visible = true
-    _inventory_need({'Stone': 4})
+    inventory_bar.set_inventory_need({'Stone': 4})
 
 func build_deactivate():
     $BuildingMarker.visible = false
-    _inventory_need({})
+    inventory_bar.set_inventory_need({})
 
 func build_process(event : InputEvent) -> void:
     if event is InputEventMouseButton:
@@ -339,39 +339,6 @@ func set_mode(next_mode : int) -> void:
 
 # --- inventory ---
 
-var _hud_map := Dictionary()
-var _inventory_need := Dictionary()
-
-func _inventory_hud_ready() -> void:
-    _hud_map['Coal'] = $CanvasLayer/InventoryContainer/Label
-    _hud_map['Emerald'] = $CanvasLayer/InventoryContainer/Label2
-    _hud_map['Gold'] = $CanvasLayer/InventoryContainer/Label3
-    _hud_map['Iron'] = $CanvasLayer/InventoryContainer/Label4
-    _hud_map['Lapis'] = $CanvasLayer/InventoryContainer/Label5
-    _hud_map['Redstone'] = $CanvasLayer/InventoryContainer/Label6
-    _hud_map['Stone'] = $CanvasLayer/InventoryContainer/Label7
-    
-func _on_inventory_amount_changed(name : String, amount : int) -> void:
-    """
-        Updated the HUD upon inventory amount changes
-    """
-    _hud_map[name].text = str(amount)
-    _inventory_update_colour()
-    
-func _inventory_need(needs : Dictionary) -> void:
-    _inventory_need = needs
-    _inventory_update_colour()
-
-func _inventory_update_colour() -> void:
-    for k in _hud_map.keys():
-        var show_red := false
-        if k in _inventory_need:
-            if _inventory_need[k] > inventory.amount(k):
-                show_red = true
-        if show_red:
-            _hud_map[k].set("custom_colors/font_color", Color(1.0, 0.0, 0.0))
-        else:
-            _hud_map[k].set("custom_colors/font_color", Color(1.0, 1.0, 1.0))
 
 
 # --- UI events ---
