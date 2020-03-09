@@ -163,29 +163,20 @@ func _on_tile_dug(tile : Vector2, digger) -> void:
             if fog_map.get_cellv(tile + Vector2(x, y)) != TileMap.INVALID_CELL:
                 fog_map.set_cellv(tile + Vector2(x, y), edge_id)
     _map_changed(tile, 1, 1)
-
-func _unhandled_input(event: InputEvent) -> void:
-    if event is InputEventMouseButton:
-        if event.is_pressed() and event.button_index == BUTTON_RIGHT:
-            set_mode(MODE_DIG)
-            return
-    elif event is InputEventKey:
-        if event.is_action_pressed("tool_dig"):
-            set_mode(MODE_DIG)
-            return
-        elif event.is_action_pressed("tool_build_quarter"):
-            set_building_type(BUILDING_QUARTER)
-            set_mode(MODE_BUILD)
-        elif event.is_action_pressed("tool_build_warehouse"):
-            set_building_type(BUILDING_WAREHOUSE)
-            set_mode(MODE_BUILD)
-            return
     
-    match _mode:
-        MODE_DIG:
-            dig_process(event)
-        MODE_BUILD:
-            build_process(event)
+    # Random decision if a monster appears or not
+    if tile == Vector2(22, 11):
+        # TODO not very random
+        _spawn_goblin(tile)
+
+func _spawn_goblin(tile : Vector2) -> void:
+    """
+        Spawns a goblin at the given tile
+    """
+    var gl := load("res://actors/Goblin.tscn")
+    var g : Goblin = gl.instance()
+    g.position = world_map_to_world(tile) + Vector2(8,8)
+    self.add_child(g)
 
 # --- world interface ---
 
@@ -337,11 +328,30 @@ func set_mode(next_mode : int) -> void:
         MODE_BUILD:
             build_activate()
 
-# --- inventory ---
-
-
-
 # --- UI events ---
+
+func _unhandled_input(event: InputEvent) -> void:
+    if event is InputEventMouseButton:
+        if event.is_pressed() and event.button_index == BUTTON_RIGHT:
+            set_mode(MODE_DIG)
+            return
+    elif event is InputEventKey:
+        if event.is_action_pressed("tool_dig"):
+            set_mode(MODE_DIG)
+            return
+        elif event.is_action_pressed("tool_build_quarter"):
+            set_building_type(BUILDING_QUARTER)
+            set_mode(MODE_BUILD)
+        elif event.is_action_pressed("tool_build_warehouse"):
+            set_building_type(BUILDING_WAREHOUSE)
+            set_mode(MODE_BUILD)
+            return
+    
+    match _mode:
+        MODE_DIG:
+            dig_process(event)
+        MODE_BUILD:
+            build_process(event)
 
 func _on_DigButton_pressed() -> void:
     set_mode(MODE_DIG)

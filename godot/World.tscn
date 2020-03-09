@@ -16,6 +16,7 @@
 script = ExtResource( 1 )
 
 [node name="Navigation2D" type="Navigation2D" parent="."]
+editor/display_folded = true
 
 [node name="WorldMap" type="TileMap" parent="Navigation2D"]
 tile_set = ExtResource( 2 )
@@ -38,6 +39,7 @@ position = Vector2( 320, 192 )
 texture = ExtResource( 4 )
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+editor/display_folded = true
 layer = 2
 
 [node name="InventoryBar" parent="CanvasLayer" instance=ExtResource( 5 )]
