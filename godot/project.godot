@@ -9,6 +9,16 @@
 config_version=4
 
 _global_script_classes=[ {
+"base": "Node",
+"class": "Buildings",
+"language": "GDScript",
+"path": "res://utils/Buildings.gd"
+}, {
+"base": "Node",
+"class": "Inventory",
+"language": "GDScript",
+"path": "res://utils/Inventory.gd"
+}, {
 "base": "KinematicBody2D",
 "class": "Minion",
 "language": "GDScript",
@@ -20,6 +30,8 @@ _global_script_classes=[ {
 "path": "res://utils/Tasks.gd"
 } ]
 _global_script_class_icons={
+"Buildings": "",
+"Inventory": "",
 "Minion": "",
 "Tasks": ""
 }

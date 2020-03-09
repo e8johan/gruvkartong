@@ -16,6 +16,7 @@ var _building_type : int = -1
 var _dig_queue := []
 
 func _ready() -> void:
+    _inventory_hud_ready()
     inventory = Inventory.new()
     inventory.connect("amount_changed", self, "_on_inventory_amount_changed")
     inventory.force_update()
@@ -254,9 +255,11 @@ func dig_process(event : InputEvent) -> void:
 
 func build_activate():
     $BuildingMarker.visible = true
+    _inventory_need({'Stone': 4})
 
 func build_deactivate():
     $BuildingMarker.visible = false
+    _inventory_need({})
 
 func build_process(event : InputEvent) -> void:
     if event is InputEventMouseButton:
@@ -264,23 +267,26 @@ func build_process(event : InputEvent) -> void:
             var tile_pos = world_map.world_to_map(event.global_position)
 
             if can_build(tile_pos, 2, 2):
-                # Move any minions out of the way
-                for m in get_tree().get_nodes_in_group("minions"):
-                    var tl : Vector2 = world_map.map_to_world(tile_pos)
-                    if m.position.x >= tl.x and m.position.x <= tl.x+32 and m.position.y >= tl.y and m.position.y <= tl.y+32 and m.is_idle():
-                        var options := find_adjecent_corridor(tile_pos, 2, 2)
-                        m.walk_to(world_map.map_to_world(options[0])+Vector2(8,8))
-                
                 # Take the material, update the map
                 if inventory.take({'Stone': 4}):
+                    # Move any minions out of the way
+                    for m in get_tree().get_nodes_in_group("minions"):
+                        var tl : Vector2 = world_map.map_to_world(tile_pos)
+                        if m.position.x >= tl.x and m.position.x <= tl.x+32 and m.position.y >= tl.y and m.position.y <= tl.y+32 and m.is_idle():
+                            var options := find_adjecent_corridor(tile_pos, 2, 2)
+                            m.walk_to(world_map.map_to_world(options[0])+Vector2(8,8))
+                
+                    # Update the map
                     match _building_type:
                         BUILDING_QUARTER:
                             buildings.create_quarter(tile_pos)
                         BUILDING_WAREHOUSE:
                             # TODO the warehouse is not supposed to be buildable
                             buildings.create_warehouse(tile_pos)    
-                    # Update the marker status
+ 
+                   # Update the marker status
                     _build_update_marker_state(tile_pos, 2, 2)
+
                     # Update all affected tasks
                     _map_changed(tile_pos, 2, 2)
     elif event is InputEventMouseMotion:
@@ -334,200 +340,41 @@ func set_mode(next_mode : int) -> void:
 # --- inventory ---
 
 var _hud_map := Dictionary()
+var _inventory_need := Dictionary()
+
+func _inventory_hud_ready() -> void:
+    _hud_map['Coal'] = $CanvasLayer/InventoryContainer/Label
+    _hud_map['Emerald'] = $CanvasLayer/InventoryContainer/Label2
+    _hud_map['Gold'] = $CanvasLayer/InventoryContainer/Label3
+    _hud_map['Iron'] = $CanvasLayer/InventoryContainer/Label4
+    _hud_map['Lapis'] = $CanvasLayer/InventoryContainer/Label5
+    _hud_map['Redstone'] = $CanvasLayer/InventoryContainer/Label6
+    _hud_map['Stone'] = $CanvasLayer/InventoryContainer/Label7
+    
 func _on_inventory_amount_changed(name : String, amount : int) -> void:
     """
         Updated the HUD upon inventory amount changes
     """
-    if _hud_map.size() == 0:
-        _hud_map['Coal'] = $CanvasLayer/InventoryContainer/Label
-        _hud_map['Emerald'] = $CanvasLayer/InventoryContainer/Label2
-        _hud_map['Gold'] = $CanvasLayer/InventoryContainer/Label3
-        _hud_map['Iron'] = $CanvasLayer/InventoryContainer/Label4
-        _hud_map['Lapis'] = $CanvasLayer/InventoryContainer/Label5
-        _hud_map['Redstone'] = $CanvasLayer/InventoryContainer/Label6
-        _hud_map['Stone'] = $CanvasLayer/InventoryContainer/Label7
     _hud_map[name].text = str(amount)
+    _inventory_update_colour()
+    
+func _inventory_need(needs : Dictionary) -> void:
+    _inventory_need = needs
+    _inventory_update_colour()
 
-class Inventory:
-    """
-        Class representing the inventory.
-        
-        Keeps track of the amount of materials.
-    """
-    var _amounts := Array()
-    var _names := ['Coal', 'Emerald', 'Gold', 'Iron', 'Lapis', 'Redstone', 'Stone']
-    
-    signal amount_changed
-    
-    func _init() -> void:
-        for i in range(len(self._names)):
-            self._amounts.append(0)
-            
-    func force_update() -> void:
-        """
-            Forces the emission of amount_changed signals for all materials.
-        """
-        for name in self._names:
-            emit_signal("amount_changed", name, self._amounts[_names.find(name)])
-    
-    func add(name : String, amount : int = 1) -> void:
-        """
-            Adds amount of name to the inventory.
-        """
-        assert name in self._names
-        assert amount > 0
-        
-        self._amounts[_names.find(name)] += amount
-        emit_signal("amount_changed", name, self._amounts[_names.find(name)])
-    
-    func can_take(amounts : Dictionary) -> bool:
-        """
-            Returns true if the amounts can be taken from the inventory.
-        """
-        var res : bool = true
-        for k in amounts.keys():
-            assert k in self._names
-            assert amounts[k] > 0
-            if self._amounts[self._names.find(k)] < amounts[k]:
-                res = false
-        return res
-    
-    func take(amounts : Dictionary) -> bool:
-        """
-            Takes amounts from inventory. Returns true if successful
-            
-            Accepts a dictionary as input and ensures that all amounts, or none, are taken.
-        """
-        if can_take(amounts):
-            for k in amounts.keys():
-                self._amounts[self._names.find(k)] -= amounts[k]
-            for k in amounts.keys():
-                emit_signal("amount_changed", k, self._amounts[self._names.find(k)])
-            return true
+func _inventory_update_colour() -> void:
+    for k in _hud_map.keys():
+        var show_red := false
+        if k in _inventory_need:
+            if _inventory_need[k] > inventory.amount(k):
+                show_red = true
+        if show_red:
+            _hud_map[k].set("custom_colors/font_color", Color(1.0, 0.0, 0.0))
         else:
-            return false
+            _hud_map[k].set("custom_colors/font_color", Color(1.0, 1.0, 1.0))
 
-# --- buildings ---
 
-class Buildings:
-    """
-        Class representing all buildings in the world
-    """
-    
-    var _world
-    var _buildings := []
-    
-    func _init() -> void:
-        pass
-    
-    func set_world(world) -> void:
-        """
-            Must be called first, sets a reference to the world tile map
-        """
-        self._world = world
-    
-    func create_warehouse(pos : Vector2) -> void:
-        # TODO assumes it is ok to build
-        # TODO assumes that minions have been moved out of the way
-        # TODO assumes map changed is emitted by caller
-        self._world.world_set_tiles({ pos + Vector2(0,0) : "building-warehouse-1", 
-                                      pos + Vector2(1,0) : "building-warehouse-2", 
-                                      pos + Vector2(0,1) : "building-warehouse-3", 
-                                      pos + Vector2(1,1) : "building-warehouse-4" })
-        var warehouse := BuildingWarehouse.new(pos, self._world)
-        _buildings.append(warehouse)
-        
-    func create_quarter(pos : Vector2) -> void:
-        # TODO assumes it is ok to build
-        # TODO assumes that minions have been moved out of the way
-        # TODO assumes map changed is emitted by caller
-        # TODO should have quarter graphics
-        self._world.world_set_tiles({ pos + Vector2(0,0) : "building-quarter-1", 
-                                      pos + Vector2(1,0) : "building-quarter-2", 
-                                      pos + Vector2(0,1) : "building-quarter-3", 
-                                      pos + Vector2(1,1) : "building-quarter-4" })
-        var quarter := BuildingQuarter.new(pos, self._world)
-        _buildings.append(quarter)
-                
-class BuildingWarehouse:
-    """
-        Class representing a warehouse
-        
-        Spawns up to 4 minions, one second apart on start-up.
-    """
-    
-    var _pos : Vector2
-    var _world
-    
-    var _minion_preload
-    
-    func _init(pos : Vector2, world) -> void:
-        self._pos = pos
-        self._world = world
-        
-        self._minion_preload = load("res://actors/Minion.tscn")
-        
-        yield(self._world.world_get_tree().create_timer(1.0), "timeout")
-        _spawn_minion(Vector2(0,0))
-        yield(self._world.world_get_tree().create_timer(1.0), "timeout")
-        _spawn_minion(Vector2(1,0))
-        yield(self._world.world_get_tree().create_timer(1.0), "timeout")
-        _spawn_minion(Vector2(0,1))
-        yield(self._world.world_get_tree().create_timer(1.0), "timeout")
-        _spawn_minion(Vector2(1,1))
-            
-    func _spawn_minion(offset: Vector2) -> void:
-        var m : Minion = _minion_preload.instance()
-        m.position = self._world.world_map_to_world(self._pos+offset) + Vector2(8,8)
-        m.connect("death", self, "_on_minion_death")
-        self._world.world_add_actor(m)
-
-class BuildingQuarter:
-    """
-        Class representing a quarter
-        
-        Spawns up to 3 minions, one every 20 s.
-    """
-    
-    var _pos : Vector2
-    var _world
-    var _minions := []
-    
-    onready var _minion_preload
-    
-    func _init(pos : Vector2, world) -> void:
-        self._pos = pos
-        self._world = world
-        
-        self._minion_preload = load("res://actors/Minion.tscn")
-        
-        # TODO would be nice to have a progress bar inseatd of a hidden timer
-        yield(self._world.world_get_tree().create_timer(20.0), "timeout")
-        _spawn_minion()
-        
-    func _on_minion_death(m) -> void:
-        assert m in _minions
-        _minions.remove(m)
-        
-        # TODO how do we avoid minions spawning frm ohere and _spawn_minion?
-        if _minions.size() < 3:
-            yield(self._world.world_get_tree().create_timer(20.0), "timeout")
-            _spawn_minion()        
-    
-    func _spawn_minion() -> void:
-        var m : Minion = _minion_preload.instance()
-        m.position = self._world.world_map_to_world(self._pos) + Vector2(8,8)
-        m.connect("death", self, "_on_minion_death")
-        _minions.append(m)
-        self._world.world_add_actor(m)
-        
-        # TODO how do we avoid minions spawning frm ohere and _on_minion_death?
-        if _minions.size() < 3:
-            yield(self._world.world_get_tree().create_timer(20.0), "timeout")
-            _spawn_minion()
-
-# --- ui events ---
-
+# --- UI events ---
 
 func _on_DigButton_pressed() -> void:
     set_mode(MODE_DIG)
