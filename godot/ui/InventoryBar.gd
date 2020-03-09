@@ -14,6 +14,9 @@ func _ready() -> void:
     _hud_map['Stone'] = $Label7
 
 func set_inventory(inventory : Inventory) -> void:
+    """
+        Set an inventory object.
+    """
     if _inventory:
         _inventory.disconnect("amount_changed", self, "_on_inventory_amount_changed")
 
@@ -23,6 +26,11 @@ func set_inventory(inventory : Inventory) -> void:
     _inventory.force_update()
 
 func set_inventory_need(needs : Dictionary) -> void:
+    """
+        Express a material need to the inventory.
+        
+        Material not available is marked in red.
+    """
     _inventory_need = needs
     _inventory_update_colour()
 
